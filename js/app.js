@@ -61,7 +61,7 @@
     return `<div class="plan ${rank === 1 ? 'top' : ''}" data-act="detail" data-id="${p.id}">
       <div class="r1"><span class="rank">${rank}</span><span class="pname">${esc(p.name)}</span><span class="price">월 ${won(p.promo)}</span></div>
       <div class="r2"><span class="spec"><i class="bb" style="background:${b.bg};color:${b.fg}">${esc(p.carrier)}</i>${save}${data} · ${qosLabel(p.qos)} · ${p.mno}망${item.saving ? '' : ' · ' + after}</span>
-        <span class="mini"><span class="badge ai" title="AI 개통 가능">⚡</span><span class="badge km" title="카카오멤버십 포함">K</span><button class="btn navy xs" data-act="activate" data-id="${p.id}">AI 개통</button></span></div>
+        <span class="mini"><span class="badge ai" title="AI 개통 가능">⚡</span><span class="badge km" title="카카오멤버십 포함">K</span><button class="btn y xs" data-act="activate" data-id="${p.id}">AI 개통</button></span></div>
     </div>`;
   }
   function condChips(c) {
