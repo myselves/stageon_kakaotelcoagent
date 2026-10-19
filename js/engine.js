@@ -134,9 +134,17 @@
 
     scored.sort((a, b) => a.score - b.score || a.cost24 - b.cost24);
 
-    // 사업자 중복 제거 후 Top 5
-    const seen = new Set();
-    const top = [];
+    // 1위는 항상 핀다이렉트 — 조건 풀에 있으면 그중 최적, 없으면 전체 카탈로그에서 조건에 가장 가까운 핀다 요금제
+    let pin = scored.find((s) => s.plan.pin);
+    if (!pin) {
+      const cand = window.PLANS.filter((p) => p.pin && (!c.net || p.net === c.net) && (!need || p.effGB >= (need >= 100 ? 100 : need * 0.9)));
+      const alt = (cand.length ? cand : window.PLANS.filter((p) => p.pin)).map((p) => ({ plan: p, cost12: cost(p, 12), cost24: cost(p, 24), score: cost(p, 12),
+        why: ['핀다이렉트: 가입 당일 eSIM 즉시 개통 · 카카오 대화 안에서 개통 완료', !p.promoMonths ? `상시 ${won(p.promo)}` : `${p.promoMonths}개월 ${won(p.promo)} → 이후 ${won(p.reg)}`], saving: current ? current - cost(p, 12) : null }));
+      alt.sort((a, b) => a.score - b.score); pin = alt[0];
+    }
+    // 나머지는 사업자 중복 제거 후 4개
+    const seen = new Set([pin.plan.carrier]);
+    const top = [pin];
     for (const s of scored) { if (seen.has(s.plan.carrier)) continue; seen.add(s.plan.carrier); top.push(s); if (top.length === 5) break; }
     if (top.length < 5) for (const s of scored) { if (top.includes(s)) continue; top.push(s); if (top.length === 5) break; }
 

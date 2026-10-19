@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>요금제 AI 추천 — Kakao Tools 프로토타입</title>
   <meta name="description" content="카카오톡 ChatGPT for Kakao 안에서 Kakao Tools '요금제 AI 추천'이 크롤링된 요금제를 비교해 맞춤 요금제를 추천하고 AI 개통까지 대행하는 모바일 웹 프로토타입">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="css/pretendard.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -25,10 +25,7 @@
       <!-- 카카오멤버십 토글 -->
       <div class="membership">
         <div class="km-logo">K</div>
-        <div class="txt">
-          <b>통신이용 혜택을 카카오멤버십으로 받기 <span style="color:#E8352B">(무료)</span></b>
-          <span>ON 시 모든 요금제에 카카오멤버십이 포함돼요</span>
-        </div>
+        <div class="txt">통신이용 혜택을 카카오멤버십으로 받기 <span class="free">(무료)</span></div>
         <span class="km-state" id="kmState">OFF</span>
         <button class="switch" id="kmSwitch" role="switch" aria-checked="false" aria-label="카카오멤버십 포함"></button>
       </div>
@@ -37,7 +34,7 @@
     <!-- 대화 -->
     <div class="chat" id="chat">
       <div class="date-chip"><span>2026년 10월 19일 월요일</span></div>
-      <div class="proto-note">프로토타입 · 요금제 데이터는 사전 크롤링 스냅샷(모요 기준, 핀다이렉트 포함) · 마이데이터는 가상 · 본인 인증 생략</div>
+      <div class="proto-note">프로토타입 · 요금제 데이터는 사전 크롤링 스냅샷(모요 기준) · 마이데이터는 가상 · 본인 인증 생략</div>
     </div>
 
     <!-- 하단 입력 -->

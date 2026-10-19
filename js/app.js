@@ -13,7 +13,7 @@
   const scroll = () => { chat.scrollTop = chat.scrollHeight; };
 
   // 매 답변마다 AI 개통 대행 가능 안내
-  const AI_TIP = `<div class="ai-tip">🤖 <b>AI 개통</b> — 마음에 드는 요금제가 있으면 <b>가입부터 개통까지 제가 대행</b>해 드릴 수 있어요. 카드의 [AI 개통 요청] 버튼을 눌러주세요.</div>`;
+  const AI_TIP = `<div class="ai-tip">⚡ 가입부터 개통까지 AI가 대행해 드려요. 카드의 [AI 개통]을 눌러주세요.</div>`;
   const kmLine = () => (S.km ? `\n💛 카카오멤버십 ON — 모든 요금제에 카카오멤버십이 포함돼요. (무료)` : '');
 
   // ===== 기본 메시지 =====
@@ -44,7 +44,7 @@
   }
   const qosLabel = (q) => (q === '옵션' ? 'QoS 옵션' : q);
   function specLine(p) {
-    const d = p.effGB >= 999 ? '<b>데이터 완전 무제한</b>' : `<b>${p.data}${p.daily ? ' + 매일 ' + p.daily + 'GB' : ''}</b> + 소진 후 ${qosLabel(p.qos)}`;
+    const d = p.effGB >= 999 ? '데이터 완전 무제한' : `${p.data}${p.daily ? ' + 매일 ' + p.daily + 'GB' : ''} + 소진 후 ${qosLabel(p.qos)}`;
     return `${d} · 통화 ${p.voice} · 문자 ${p.sms}`;
   }
   function priceRow(item) {
@@ -54,24 +54,14 @@
   }
   function planCard(item, rank, ctx) {
     const p = item.plan;
-    const why = item.why.slice(0, ctx && ctx.full ? 5 : 2).map((w) => `<li>${esc(w)}</li>`).join('');
-    const save = item.saving && item.saving > 0 ? `<span class="badge save">월 ${won(item.saving)} 절감 예상</span>` : '';
-    return `<div class="plan ${rank === 1 ? 'top' : ''}" data-id="${p.id}">
-      <span class="rank">${rank}위</span>
-      ${brandTag(p)}
-      <div class="pname">${esc(p.name)}${p.pin ? ' <span class="badge pin">핀다이렉트</span>' : ''}</div>
-      <div class="spec">${specLine(p)}</div>
-      ${priceRow(item)}
-      <div class="reason"><ul>${why}</ul></div>
-      <div class="badges">
-        <span class="badge ai" title="AI 개통 — AI가 가입·개통을 대행해요"><span class="ic">⚡</span>AI 개통 가능</span>
-        <span class="badge km"><span class="ic">K</span>카카오멤버십 포함</span>
-        ${save}
-      </div>
-      <div class="actions">
-        <button class="btn line sm" data-act="detail" data-id="${p.id}">요금제 상세</button>
-        <button class="btn navy sm" data-act="activate" data-id="${p.id}">⚡ AI 개통 요청</button>
-      </div>
+    const b = window.BRANDS[p.carrier] || { bg: '#333', fg: '#fff' };
+    const data = p.effGB >= 999 ? '무제한' : `${p.data}${p.daily ? '+매일' + p.daily + 'GB' : ''}`;
+    const after = !p.promoMonths ? '상시' : p.kind === 'MNO' ? `정가 ${won(p.reg)}` : `${p.promoMonths}개월 후 ${won(p.reg)}`;
+    const save = item.saving && item.saving > 0 ? `<em class="save">월 ${won(item.saving)} 절감</em> · ` : '';
+    return `<div class="plan ${rank === 1 ? 'top' : ''}" data-act="detail" data-id="${p.id}">
+      <div class="r1"><span class="rank">${rank}</span><span class="pname">${esc(p.name)}</span><span class="price">월 ${won(p.promo)}</span></div>
+      <div class="r2"><span class="spec"><i class="bb" style="background:${b.bg};color:${b.fg}">${esc(p.carrier)}</i>${save}${data} · ${qosLabel(p.qos)} · ${p.mno}망${item.saving ? '' : ' · ' + after}</span>
+        <span class="mini"><span class="badge ai" title="AI 개통 가능">⚡</span><span class="badge km" title="카카오멤버십 포함">K</span><button class="btn navy xs" data-act="activate" data-id="${p.id}">AI 개통</button></span></div>
     </div>`;
   }
   function condChips(c) {
@@ -86,7 +76,7 @@
     if (c.mvnoOnly) a.push('알뜰폰만');
     if (c.mnoOnly) a.push('통신 3사만');
     if (c.mnoNet) a.push(c.mnoNet + '망');
-    if (c.cheap) a.push('저렴한 순');
+    if (c.cheap && !c.mydata) a.push('저렴한 순');
     return a.length ? `<div class="cond-chips">${a.map((x) => `<span>${esc(x)}</span>`).join('')}</div>` : '';
   }
 
@@ -103,17 +93,17 @@
       addAI(`조건에 맞는 요금제를 찾지 못했어요. 조건을 조금 바꿔서 다시 말씀해 주세요.${AI_TIP}`);
       S.busy = false; return;
     }
-    const title = opt.title || (c.mydata ? '개인 맞춤 Top 5 요금제' : `조건에 맞는 요금제 ${items.length}개 찾았어요`);
+    const title = opt.title || (c.mydata ? '개인 맞춤 Top 5' : `조건에 맞는 요금제 Top 5`);
     const sub = c.mydata
-      ? `최근 3개월 실사용(평균 ${c.avgData}GB · 통화 ${c.avgVoice}분)과 현재 납부 ${won(c.currentBill)} 기준으로 비교했어요.`
-      : `판매 중인 요금제 ${window.PLANS.length}개 중 조건에 맞는 ${res.total}개를 비교해 12개월 총비용이 낮은 순으로 보여드려요.`;
+      ? `최근 3개월 실사용 평균 ${c.avgData}GB · 현재 납부 ${won(c.currentBill)} 기준`
+      : `판매 중 ${window.PLANS.length}개 중 ${res.total}개 비교 · 12개월 총비용 낮은 순`;
     const html = `<div class="card-title">${title}</div><div class="card-sub">${sub}</div>${condChips(c)}
       ${items.map((it, i) => planCard(it, i + 1, { current: c.currentBill })).join('')}
-      <div class="km-note">💛 카카오멤버십 ON — 위 요금제 모두 <b>카카오멤버십 포함</b>으로 개통돼요. 통신이용 혜택을 카카오멤버십으로 받기 (무료)</div>
+      <div class="km-note">K 카카오멤버십 포함 — 통신이용 혜택을 카카오멤버십으로 받기 (무료)</div>
       ${AI_TIP}
       ${S.mydata || c.mydata
-        ? `<div class="btn-row"><button class="btn ghost" data-act="qa">조건 바꿔 다시 추천</button><button class="btn y" data-act="mydata-again">다시 추천 받기</button></div>`
-        : `<button class="btn y block" style="margin-top:10px" data-act="mydata">내 사용량 기반 추천 받기</button><div class="hint" style="text-align:center">더 정확하게 — 통신 마이데이터로 내 실사용에 맞춤 추천</div>`}`;
+        ? `<div class="btn-row"><button class="btn ghost sm" data-act="qa">조건 바꿔 다시 추천</button><button class="btn y sm" data-act="mydata-again">다시 추천 받기</button></div>`
+        : `<button class="btn y block sm" style="margin-top:8px" data-act="mydata">내 사용량 기반 추천 받기</button>`}`;
     addAI(html, { wide: true, tool: true });
     S.busy = false;
   }
@@ -125,7 +115,7 @@
     const tiles = Engine.PERSONAS.map((ps) => {
       const r = Engine.recommend(Object.assign({ ott: [] }, ps.c)).items.slice(0, 2);
       return `<button class="persona" data-act="persona" data-key="${ps.key}"><div class="ph">${ps.icon} ${ps.title}</div>
-        ${r.map((it) => `<div class="pp" style="margin-bottom:5px">${esc(it.plan.carrier)} ${esc(it.plan.name)}<b>${it.plan.effGB >= 999 ? '무제한' : it.plan.data}${it.plan.daily ? '+매일' + it.plan.daily + 'GB' : ''} · ${qosLabel(it.plan.qos)} <span class="pr">월 ${won(it.plan.promo)}</span></b></div>`).join('')}
+        ${r.map((it) => `<div class="pp" style="margin-bottom:5px">${esc(it.plan.carrier)} ${esc(it.plan.name)}<span class="pv">${it.plan.effGB >= 999 ? '무제한' : it.plan.data}${it.plan.daily ? '+매일' + it.plan.daily + 'GB' : ''} · ${qosLabel(it.plan.qos)} <span class="pr">월 ${won(it.plan.promo)}</span></span></div>`).join('')}
       </button>`;
     }).join('');
     addAI(`<div class="card-title">추천 요금제</div><div class="card-sub">성향별로 가장 잘 맞는 요금제를 추천해드려요. 성향을 누르면 Top 5를 보여드릴게요.</div>
@@ -144,7 +134,7 @@
   async function startQA() {
     S.qa = { i: 0, ans: {} };
     await typing(400);
-    addAI(`<b>조건 선택해서 찾기</b>\n원하시는 조건을 선택해 주세요!`);
+    addAI(`조건 선택해서 찾기\n원하시는 조건을 선택해 주세요!`);
     await sleep(300);
     askNext();
   }
@@ -190,7 +180,7 @@
     addAI(`통신 마이데이터로 자동 분석할게요.\n<span style="color:#6b7480;font-size:12px">※ 프로토타입: 본인 인증·동의 절차는 생략하고 가상의 통신 마이데이터(${esc(MD.name)} · ${esc(MD.carrier)})를 불러옵니다.</span>`);
     await sleep(500);
     const b = addAI(`<div class="steps">
-      <div class="step done" id="st1"><div class="sh">👤 개인정보 확인<span class="st">완료</span></div><div class="sb"><b>${esc(MD.name)}</b> | ${esc(MD.carrier)} | ${esc(MD.phone)} ✎<div class="tags"><span>최근 3개월 데이터</span><span>현재 납부요금</span><span>혜택 분석</span></div></div></div>
+      <div class="step done" id="st1"><div class="sh">👤 개인정보 확인<span class="st">완료</span></div><div class="sb">${esc(MD.name)} | ${esc(MD.carrier)} | ${esc(MD.phone)} ✎<div class="tags"><span>최근 3개월 데이터</span><span>현재 납부요금</span><span>혜택 분석</span></div></div></div>
       <div class="step" id="st2"><div class="sh">🔍 통신 사용량 분석<span class="st">대기 중</span></div><div class="sb" style="display:none"></div><div class="bar"><i></i></div></div>
       <div class="step" id="st3"><div class="sh">✨ 혜택·결합 분석<span class="st">대기 중</span></div><div class="sb" style="display:none"></div><div class="bar"><i></i></div></div>
     </div>`, { wide: true });
@@ -201,8 +191,8 @@
       const sb = s.querySelector('.sb'); sb.innerHTML = text; sb.style.display = 'block'; scroll();
     };
     const c = Engine.criteriaFromMyData(MD);
-    await run('st2', `최근 3개월 데이터 평균 <b>${c.avgData}GB</b> (최대 ${c.maxData}GB) · 통화 평균 <b>${c.avgVoice}분</b> · 문자 ${c.avgSms}건<br>현재 요금제 <b>${esc(MD.carrier)} ${esc(MD.plan.name)}</b> (${MD.plan.data}) · 최근 납부 <b>${won(c.currentBill)}</b>`, 1300);
-    await run('st3', `선택약정 <b>${esc(MD.contract.status)}</b> (${MD.contract.endedAt}) → 9월부터 정가 납부 중 · 결합 ${esc(MD.bundle)} · OTT 별도 구독 ${MD.ott.join('·')}<br>→ 110GB 요금제에서 평균 ${c.avgData}GB 사용 · <b>위약금 없이 지금 변경 가능</b>`, 1300);
+    await run('st2', `최근 3개월 데이터 평균 ${c.avgData}GB (최대 ${c.maxData}GB) · 통화 평균 ${c.avgVoice}분 · 문자 ${c.avgSms}건<br>현재 요금제 ${esc(MD.carrier)} ${esc(MD.plan.name)} (${MD.plan.data}) · 최근 납부 ${won(c.currentBill)}`, 1300);
+    await run('st3', `선택약정 ${esc(MD.contract.status)} (${MD.contract.endedAt}) → 9월부터 정가 납부 중 · 결합 ${esc(MD.bundle)} · OTT 별도 구독 ${MD.ott.join('·')}<br>→ 110GB 요금제에서 평균 ${c.avgData}GB 사용 · 위약금 없이 지금 변경 가능`, 1300);
     await sleep(400);
     S.mydata = true;
     await typing(500);
@@ -255,12 +245,12 @@
     ];
     $('#sheetBody').innerHTML = `
       <div class="sec pricebox">${brandTag(p)}<div class="pn">${esc(p.name)}</div><div class="pr">월 ${won(p.promo)}<small>${p.promoMonths ? `${p.promoMonths}개월 후 ${won(p.reg)}` : '상시'}</small></div>
-        <div class="badges" style="margin-top:8px"><span class="badge ai"><span class="ic">⚡</span>AI 개통 가능</span><span class="badge km"><span class="ic">K</span>카카오멤버십 포함</span>${saving && saving > 0 ? `<span class="badge save">월 ${won(saving)} 절감 예상</span>` : ''}</div></div>
+        <div class="badges" style="margin-top:8px"><span class="badge ai">⚡ AI 개통 가능</span><span class="badge km">K 카카오멤버십 포함</span>${saving && saving > 0 ? `<span class="badge save">월 ${won(saving)} 절감 예상</span>` : ''}</div></div>
       <div class="sec"><h4>${left} vs 추천 요금제 비교</h4><table class="cmp"><tr><th></th><th>${left}</th><th>추천 요금제</th></tr>${rows.map((r) => `<tr><td>${r[0]}</td><td class="cur">${esc(r[1])}</td><td class="rec">${esc(r[2])}</td></tr>`).join('')}</table></div>
       <div class="sec"><h4>변경 시점 비교</h4><div class="timing"><button class="sel" data-timing="now">지금 변경</button><button data-timing="3m">3개월 후 변경</button><button data-timing="6m">6개월 후 변경</button></div><div class="timing-note" id="timingNote"></div></div>
       <div class="sec"><h4>AI 요금제 추천 사유</h4><ul class="numlist">${reasons.map((r, i) => `<li><span class="n">${i + 1}</span><span>${esc(r)}</span></li>`).join('')}</ul></div>
       <div class="sec"><h4>요금제 분석 판단 근거</h4><ul class="numlist">${basis.map((r, i) => `<li><span class="n b">${i + 1}</span><span>${esc(r)}</span></li>`).join('')}</ul></div>
-      <div class="sec"><div class="km-box"><div class="km-logo" style="width:30px;height:30px;border-radius:9px;background:#FEE500;display:grid;place-items:center;font-weight:900;color:#3C1E1E">K</div><div class="txt"><b>통신이용 혜택을 카카오멤버십으로 받기 (무료)</b><span>${S.km ? '이 요금제에 카카오멤버십이 포함돼 개통돼요.' : 'ON으로 켜면 모든 요금제에 카카오멤버십이 포함돼요.'}</span></div><button class="switch" id="kmSwitch2" role="switch" aria-checked="${S.km}"></button></div></div>
+      <div class="sec"><div class="km-box"><div class="km-logo" style="width:30px;height:30px;border-radius:9px;background:#FEE500;display:grid;place-items:center;font-weight:900;color:#3C1E1E">K</div><div class="txt">통신이용 혜택을 카카오멤버십으로 받기 (무료)<span>${S.km ? '이 요금제에 카카오멤버십이 포함돼 개통돼요.' : 'ON으로 켜면 모든 요금제에 카카오멤버십이 포함돼요.'}</span></div><button class="switch" id="kmSwitch2" role="switch" aria-checked="${S.km}"></button></div></div>
       <div class="sec" style="font-size:12px;color:#6b7480">🤖 AI 개통 — 가입부터 번호이동·eSIM 개통까지 AI가 대행해 드려요. 카카오 대화 안에서 끝나요.</div>`;
     S.timing = 'now'; S.detailId = id;
     renderTiming(it, saving);
@@ -272,7 +262,7 @@
     const note = $('#timingNote'); const foot = $('#sheetFoot');
     const s = saving && saving > 0 ? saving : null;
     if (S.timing === 'now') {
-      note.innerHTML = `지금 변경 시 ${s ? `<b>첫 달부터 월 ${won(s)} 절감</b> · 12개월 누적 약 ${won(s * 12)}` : `${p.promoMonths ? `${p.promoMonths}개월 할인가 즉시 적용` : '상시 할인가 적용'}`}. ${S.mydata ? '약정이 만료돼 위약금이 없어요.' : ''}`;
+      note.innerHTML = `지금 변경 시 ${s ? `첫 달부터 월 ${won(s)} 절감 · 12개월 누적 약 ${won(s * 12)}` : `${p.promoMonths ? `${p.promoMonths}개월 할인가 즉시 적용` : '상시 할인가 적용'}`}. ${S.mydata ? '약정이 만료돼 위약금이 없어요.' : ''}`;
       foot.innerHTML = `<button class="btn y block" data-act="activate" data-id="${p.id}">⚡ AI 개통으로 요금제 변경하기</button>`;
     } else {
       const m = S.timing === '3m' ? 3 : 6;
@@ -316,7 +306,7 @@
     }
     await sleep(300);
     await typing(500);
-    addAI(`🎉 <b>${esc(p.carrier)} ${esc(p.name)}</b> 개통 신청이 완료됐어요!\n${sim === 'esim' ? 'eSIM QR을 카카오톡으로 보내드렸어요. 설치하면 바로 사용할 수 있어요.' : '유심이 내일 도착하면 카카오톡 알림으로 개통 안내를 드릴게요.'}\n\n• 월 요금 ${won(p.promo)}${p.promoMonths ? ` (${p.promoMonths}개월 후 ${won(p.reg)})` : ' (상시)'}${it.saving && it.saving > 0 ? `\n• 현재 대비 월 ${won(it.saving)} 절감` : ''}${S.km ? '\n• 카카오멤버십 포함 — 통신이용 혜택을 카카오멤버십으로 받기 (무료)' : ''}\n• 할인 종료 30일·7일·당일 전에 더 유리한 요금제가 있으면 알림톡으로 알려드릴게요.${AI_TIP}`);
+    addAI(`🎉 ${esc(p.carrier)} ${esc(p.name)} 개통 신청이 완료됐어요!\n${sim === 'esim' ? 'eSIM QR을 카카오톡으로 보내드렸어요. 설치하면 바로 사용할 수 있어요.' : '유심이 내일 도착하면 카카오톡 알림으로 개통 안내를 드릴게요.'}\n\n• 월 요금 ${won(p.promo)}${p.promoMonths ? ` (${p.promoMonths}개월 후 ${won(p.reg)})` : ' (상시)'}${it.saving && it.saving > 0 ? `\n• 현재 대비 월 ${won(it.saving)} 절감` : ''}${S.km ? '\n• 카카오멤버십 포함 — 통신이용 혜택을 카카오멤버십으로 받기 (무료)' : ''}\n• 할인 종료 30일·7일·당일 전에 더 유리한 요금제가 있으면 알림톡으로 알려드릴게요.${AI_TIP}`);
   }
 
   async function setAlarm(id, m) {
@@ -324,7 +314,7 @@
     const it = findItem(id); const p = it.plan;
     addUser(`${m}개월 후 변경 알림톡 받기`);
     await typing(500);
-    addAI(`🔔 <b>${esc(p.carrier)} ${esc(p.name)}</b> 변경 알림을 설정했어요.\n${m}개월 후 변경 시점 30일·7일·당일에 가격·프로모션을 재검증해 알림톡으로 알려드릴게요. 더 저렴한 요금제가 새로 나오면 그때도 알려드려요.${AI_TIP}`);
+    addAI(`🔔 ${esc(p.carrier)} ${esc(p.name)} 변경 알림을 설정했어요.\n${m}개월 후 변경 시점 30일·7일·당일에 가격·프로모션을 재검증해 알림톡으로 알려드릴게요. 더 저렴한 요금제가 새로 나오면 그때도 알려드려요.${AI_TIP}`);
   }
 
   // ===== 입력 처리 =====
@@ -383,7 +373,7 @@
     setKm(!S.km);
     if (S.busy) return;
     await typing(300);
-    addAI(S.km ? `💛 <b>카카오멤버십 포함 ON</b>\n이제 추천되는 모든 요금제에 카카오멤버십이 포함돼요. 통신이용 혜택을 카카오멤버십으로 받기 (무료) — 추가 비용 없이 개통 시 자동 적용돼요.${AI_TIP}` : `카카오멤버십 포함을 껐어요. 언제든 상단 토글로 다시 켤 수 있어요.${AI_TIP}`);
+    addAI(S.km ? `카카오멤버십 포함 ON\n이제 추천되는 모든 요금제에 카카오멤버십이 포함돼요. 통신이용 혜택을 카카오멤버십으로 받기 (무료) — 추가 비용 없이 개통 시 자동 적용돼요.${AI_TIP}` : `카카오멤버십 포함을 껐어요. 언제든 상단 토글로 다시 켤 수 있어요.${AI_TIP}`);
   });
 
   const input = $('#input');
@@ -400,7 +390,7 @@
     chat.querySelectorAll('.msg').forEach((m) => m.remove());
     S.last = null; S.mydata = false; S.qa = null;
     await typing(500);
-    addAI(`안녕하세요!\n저는 <b>요금제 추천 AI</b>예요.\n원하는 요금제 조건을 말씀해주세요.\n예) 월 3만원대 / 데이터 무제한 / 5G\n\n통신 3사와 알뜰폰(핀다이렉트 포함) 요금제를 모두 비교해 드리고, 마이데이터를 연결하면 내 사용 패턴에 맞춰 추천해드려요.${AI_TIP}
+    addAI(`안녕하세요!\n저는 요금제 추천 AI예요.\n원하는 요금제 조건을 말씀해주세요.\n예) 월 3만원대 / 데이터 무제한 / 5G\n\n통신 3사와 알뜰폰 요금제를 모두 비교해 드리고, 마이데이터를 연결하면 내 사용 패턴에 맞춰 추천해드려요.${AI_TIP}
       <div class="btn-row"><button class="btn line" data-act="qa">조건 선택해서 찾기</button><button class="btn y" data-act="mydata">마이데이터로 자동 분석</button></div>`);
   }
   $('#btnNew').addEventListener('click', greet);
